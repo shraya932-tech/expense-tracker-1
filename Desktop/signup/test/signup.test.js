@@ -73,6 +73,61 @@ test("returns 409 when an email already exists (case-insensitive)", async () => 
     assert.deepEqual(await response.json(), { message: "User already exists" });
 });
 
+test("logs in with valid credentials and does not return the password hash", async () => {
+    const response = await fetch(`${baseUrl}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            email: "TEST@example.com",
+            password: "correct horse battery"
+        })
+    });
+    const result = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(result.message, "Login successful!");
+    assert.deepEqual(result.user, {
+        id: 1,
+        name: "Test User",
+        email: "test@example.com"
+    });
+    assert.equal(Object.hasOwn(result.user, "password_hash"), false);
+});
+
+test("rejects incorrect credentials with a generic 401 response", async () => {
+    for (const credentials of [
+        { email: "test@example.com", password: "wrong password" },
+        { email: "unknown@example.com", password: "correct horse battery" }
+    ]) {
+        const response = await fetch(`${baseUrl}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(credentials)
+        });
+
+        assert.equal(response.status, 401);
+        assert.deepEqual(await response.json(), { message: "Invalid email or password" });
+    }
+});
+
+test("validates login fields and email format", async () => {
+    const invalidRequests = [
+        [{ email: "test@example.com" }, "Email and password are required"],
+        [{ email: "not-an-email", password: "some password" }, "Please enter a valid email"]
+    ];
+
+    for (const [body, message] of invalidRequests) {
+        const response = await fetch(`${baseUrl}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        assert.equal(response.status, 400);
+        assert.deepEqual(await response.json(), { message });
+    }
+});
+
 test("rejects missing fields, invalid emails, and short passwords", async () => {
     const invalidRequests = [
         [{ name: "Missing email", password: "long enough" }, "All fields are required"],

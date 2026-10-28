@@ -17,6 +17,9 @@ function createApp(databasePath = path.join(appDirectory, "data", "signup.sqlite
     const insertUser = database.prepare(
         "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)"
     );
+    const findUserByEmail = database.prepare(
+        "SELECT id, name, email, password_hash FROM users WHERE email = ?"
+    );
     const serverApp = express();
 
     serverApp.use(express.json());
@@ -61,6 +64,42 @@ function createApp(databasePath = path.join(appDirectory, "data", "signup.sqlite
                 return res.status(409).json({ message: "User already exists" });
             }
 
+            return next(error);
+        }
+    });
+
+    serverApp.post("/login", async (req, res, next) => {
+        const { email, password } = req.body ?? {};
+
+        if (
+            typeof email !== "string" ||
+            typeof password !== "string" ||
+            !email.trim() ||
+            !password
+        ) {
+            return res.status(400).json({ message: "Email and password are required" });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            return res.status(400).json({ message: "Please enter a valid email" });
+        }
+
+        try {
+            const user = findUserByEmail.get(normalizedEmail);
+            const passwordMatches = user
+                ? await bcrypt.compare(password, user.password_hash)
+                : false;
+
+            if (!passwordMatches) {
+                return res.status(401).json({ message: "Invalid email or password" });
+            }
+
+            return res.status(200).json({
+                message: "Login successful!",
+                user: { id: user.id, name: user.name, email: user.email }
+            });
+        } catch (error) {
             return next(error);
         }
     });
