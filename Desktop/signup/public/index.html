@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Screen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 320px;
+            box-shadow: 0 4px 15px #ccc;
+        }
+
+        input, button {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+        }
+
+        input {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #message {
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+    <form id="signupForm">
+        <h2>Create Account</h2>
+
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="password" id="password"
+               placeholder="Password (minimum 8 characters)"
+               minlength="8" required>
+
+        <button type="submit">Sign Up</button>
+        <p id="message" role="status"></p>
+    </form>
+
+    <script>
+        const form = document.getElementById("signupForm");
+        const message = document.getElementById("message");
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            if (!name || !email || !password) {
+                message.textContent = "All fields are required.";
+                return;
+            }
+
+            if (password.length < 8) {
+                message.textContent =
+                    "Password must be at least 8 characters.";
+                return;
+            }
+
+            try {
+                const response = await fetch("/signup", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const result = await response.json();
+                message.textContent = result.message;
+
+                if (response.ok) {
+                    form.reset();
+                }
+            } catch (error) {
+                message.textContent =
+                    "Unable to connect to the server.";
+            }
+        });
+    </script>
+</body>
+</html>
