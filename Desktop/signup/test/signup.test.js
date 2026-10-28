@@ -85,7 +85,7 @@ test("logs in with valid credentials and does not return the password hash", asy
     const result = await response.json();
 
     assert.equal(response.status, 200);
-    assert.equal(result.message, "Login successful!");
+    assert.equal(result.message, "User login successful");
     assert.deepEqual(result.user, {
         id: 1,
         name: "Test User",
@@ -94,20 +94,32 @@ test("logs in with valid credentials and does not return the password hash", asy
     assert.equal(Object.hasOwn(result.user, "password_hash"), false);
 });
 
-test("rejects incorrect credentials with a generic 401 response", async () => {
-    for (const credentials of [
-        { email: "test@example.com", password: "wrong password" },
-        { email: "unknown@example.com", password: "correct horse battery" }
-    ]) {
-        const response = await fetch(`${baseUrl}/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(credentials)
-        });
+test("rejects an incorrect password with HTTP 401", async () => {
+    const response = await fetch(`${baseUrl}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            email: "test@example.com",
+            password: "wrong password"
+        })
+    });
 
-        assert.equal(response.status, 401);
-        assert.deepEqual(await response.json(), { message: "Invalid email or password" });
-    }
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { message: "Incorrect password" });
+});
+
+test("returns HTTP 404 when the user does not exist", async () => {
+    const response = await fetch(`${baseUrl}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            email: "unknown@example.com",
+            password: "correct horse battery"
+        })
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { message: "User not found" });
 });
 
 test("validates login fields and email format", async () => {

@@ -87,16 +87,17 @@ function createApp(databasePath = path.join(appDirectory, "data", "signup.sqlite
 
         try {
             const user = findUserByEmail.get(normalizedEmail);
-            const passwordMatches = user
-                ? await bcrypt.compare(password, user.password_hash)
-                : false;
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
 
+            const passwordMatches = await bcrypt.compare(password, user.password_hash);
             if (!passwordMatches) {
-                return res.status(401).json({ message: "Invalid email or password" });
+                return res.status(401).json({ message: "Incorrect password" });
             }
 
             return res.status(200).json({
-                message: "Login successful!",
+                message: "User login successful",
                 user: { id: user.id, name: user.name, email: user.email }
             });
         } catch (error) {
