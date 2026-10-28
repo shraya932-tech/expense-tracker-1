@@ -78,6 +78,11 @@
                 return;
             }
 
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                message.textContent = "Please enter a valid email.";
+                return;
+            }
+
             if (password.length < 8) {
                 message.textContent =
                     "Password must be at least 8 characters.";
